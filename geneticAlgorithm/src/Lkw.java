@@ -15,4 +15,12 @@ public class Lkw {
     public String toString() {
         return String.format("Lkw #%d: Kapazität %d Kisten mit insg. %d kg, Geschwindigkeit: %d km/h", this.nr, this.kapa_kisten, this.kapa_gewicht, this.kmh);
     }
+
+    public int getKapa_kisten() {
+        return kapa_kisten;
+    }
+
+    public int getKapa_gewicht() {
+        return kapa_gewicht;
+    }
 }

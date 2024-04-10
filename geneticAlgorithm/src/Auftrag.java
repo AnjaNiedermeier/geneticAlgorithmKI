@@ -27,4 +27,16 @@ public class Auftrag {
     public String toString() {
         return String.format("Auftrag #%d: Ziel %c, %d Kisten mit jeweils. %d kg", this.nr, this.ziel, this.anzahl_kisten, this.gewicht_kisten);
     }
+
+    public int getGewicht_kisten() {
+        return gewicht_kisten;
+    }
+
+    public int getAnzahl_kisten() {
+        return anzahl_kisten;
+    }
+
+    public char getZiel() {
+        return ziel;
+    }
 }
