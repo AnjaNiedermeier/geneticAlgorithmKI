@@ -12,10 +12,9 @@ import java.util.stream.Collectors;
 public class Beladungsstrategie {
     public static void main(String[] args) {
         // Algorithm Hyperparameters
-        int populationSize = 100;
-        int maxRounds = 100;
-        double crossoverRate = 0.5;
-        double mutationRate = 0.0;
+        int populationSize = 1000;
+        int maxRounds = 300;
+        double mutationRate = 0.3;
 
         List<Auftrag> auftraege;
         List<Lkw> lkws;
@@ -39,7 +38,9 @@ public class Beladungsstrategie {
             int[] fitness = calculateFitnessPopulation(populationSize, auftraege, lkws, population);
 
             // Select Parents for Reproduction
-            int[][][] parents = selectParents(populationSize, crossoverRate, auftraege, lkws, population, fitness);
+            //int numParents = (int) Math.round(crossoverRate * populationSize);
+            int numParents = getNumNegativeFitnessValues(fitness);
+            int[][][] parents = selectParents(populationSize, numParents, auftraege, lkws, population, fitness);
 
             // Generate n offspring individuals from the n selected parents
             int[][][] offspring = generateOffspring(parents, lkws, auftraege);
@@ -48,35 +49,60 @@ public class Beladungsstrategie {
             replacePopulation(population, offspring, fitness);
 
             // Mutate random individuals of the population
-            // population = mutation(population, mutationRate);
+            population = mutation(population, mutationRate, auftraege, lkws);
         }
+
+        //Print final Population Fitnesses
+        System.out.println("-------------------------------");
+        System.out.println("Final Population Fitness Scores:");
+        int[] fitness = calculateFitnessPopulation(populationSize, auftraege, lkws, population);
     }
 
-    private static int[][][] mutation(int[][][] population, double mutationRate) {
+    private static int getNumNegativeFitnessValues(int[] fitness) {
+        int num = 0;
+        for(int i = 0; i<fitness.length; i++){
+            if (fitness[i] < 0){
+                num ++;
+            }
+        }
+        return num;
+    }
+
+    private static int[][][] mutation(int[][][] population, double mutationRate, List<Auftrag> auftraege, List<Lkw> lkws) {
         int mutationAmount = (int) Math.ceil(mutationRate * population.length);
         // Choose random contracts to mutate
         Random random = new Random();
         for (int i = 0; i < mutationAmount; i++) {
             int indexMutation = random.nextInt(population.length);
             int[][] mutationCandidate = population[indexMutation];
-            mutationCandidate = mutateCandidate(mutationCandidate, mutationRate);
-            population[indexMutation] = mutationCandidate;
+            mutationCandidate = mutateCandidate(mutationCandidate, 0.01);
+            if(isValidIndividual(mutationCandidate, lkws, auftraege)){
+                population[indexMutation] = mutationCandidate;
+            }
         }
         return population;
     }
 
     private static int[][] mutateCandidate(int[][] mutationCandidate, double mutationRate) {
-        int[][] mutatedCandidate = new int[mutationCandidate.length][mutationCandidate[0].length];
+        int[][] mutatedCandidate = Arrays.stream(mutationCandidate).map(int[]::clone).toArray(int[][]::new);
         Random random = new Random();
-        for (int i = 0; i < mutationCandidate.length; i++) {
-            for (int j = 0; j < mutationCandidate[i].length; j++) {
+
+        // Perform swap mutation with a certain probability
+        for (int i = 0; i < mutatedCandidate.length; i++) {
+            for (int j = 0; j < mutatedCandidate[i].length; j++) {
                 if (random.nextDouble() < mutationRate) {
-                    mutatedCandidate[i][j] = random.nextInt(10);
-                } else {
-                    mutatedCandidate[i][j] = mutationCandidate[i][j];
+                    // Randomly select another element to swap with
+                    int swapRow = random.nextInt(mutatedCandidate.length);
+                    int swapCol = random.nextInt(mutatedCandidate[0].length);
+
+                    // Perform the swap
+                    int temp = mutatedCandidate[i][j];
+                    mutatedCandidate[i][j] = mutatedCandidate[swapRow][swapCol];
+                    mutatedCandidate[swapRow][swapCol] = temp;
                 }
             }
         }
+
         return mutatedCandidate;
     }
 
@@ -105,16 +131,15 @@ public class Beladungsstrategie {
         return worstIndices;
     }
 
-    private static int[][][] selectParents(int populationSize, double crossoverRate, List<Auftrag> auftraege,
+    private static int[][][] selectParents(int populationSize, int numParents, List<Auftrag> auftraege,
             List<Lkw> lkws, int[][][] population, int[] fitness) {
-        int numParents = (int) Math.round(crossoverRate * populationSize);
 
         List<Integer> parentList = new ArrayList<>();
         while (parentList.size() < numParents) {
             int currentParent = selectParent(fitness);
-            if (!parentList.contains(currentParent)) {
+            //if (!parentList.contains(currentParent)) {
                 parentList.add(currentParent);
-            }
+            //}
         }
 
         int[] parentIndices = parentList.stream().mapToInt(i -> i).toArray();
@@ -202,7 +227,9 @@ public class Beladungsstrategie {
         // Calculate total Fitness of population (Roulette Wheel)
         int totalFitness = 0;
         for (int i = 0; i < fitness.length; i++) {
-            totalFitness += fitness[i];
+            if(fitness[i]>0){
+                totalFitness += fitness[i];
+            }
         }
 
         // Generate a random number between 0 and totalFitness
@@ -212,7 +239,9 @@ public class Beladungsstrategie {
         // Find the individual that corresponds with the random number
         int cumulativeFitness = 0;
         for (int i = 0; i < fitness.length; i++) {
-            cumulativeFitness += fitness[i];
+            if(fitness[i]>0){
+                cumulativeFitness += fitness[i];
+            }
             if (cumulativeFitness >= randomNumber) {
                 return i;
             }
