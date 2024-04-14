@@ -13,12 +13,13 @@ public class Beladungsstrategie {
     public static void main(String[] args) {
         // Algorithm Hyperparameters
         int populationSize = 1000;
-        int maxRounds = 200;
-        double mutationRate = 0.18;
+        int maxRounds = 100;
+        double mutationRate = 0.2;
 
         List<Auftrag> auftraege;
         List<Lkw> lkws;
         int[][][] population;
+        int bestSolutionScore = 0;
 
         // Einlesen von LKWs und Aufträgen
         System.out.println("Einlesen der Aufträge und LKWs...");
@@ -30,15 +31,23 @@ public class Beladungsstrategie {
         population = initPopulation(populationSize, lkws.size(), auftraege.size(), lkws, auftraege);
         System.out.println("Finished Initialization");
 
+        int[][] bestSolution = new int[lkws.size()][auftraege.size()];
         // Wiederhole für maxRounds Runden
         for (int round = 1; round <= maxRounds; round++) {
-
             System.out.println("Runde " + round + ": ");
             // Berechne fitness der Lösungen
             int[] fitness = calculateFitnessPopulation(populationSize, auftraege, lkws, population);
+            
+            //Merke beste valide Lösung
+            int[][] bestSolutionRound = population[getBestSolutionIndex(fitness)];
+            int bestSolutionRoundScore = calculateFitnessIndividual(bestSolutionRound, auftraege, lkws);
+            if(bestSolutionRoundScore > bestSolutionScore && isValidIndividual(bestSolutionRound, lkws, auftraege)){
+                System.out.println("hier");
+                bestSolution = bestSolutionRound;
+                bestSolutionScore = bestSolutionRoundScore;
+            }
 
             // Select Parents for Reproduction
-            // int numParents = (int) Math.round(crossoverRate * populationSize);
             int numParents = getNumNegativeFitnessValues(fitness);
             int[][][] parents = selectParents(populationSize, numParents, auftraege, lkws, population, fitness);
 
@@ -50,12 +59,36 @@ public class Beladungsstrategie {
 
             // Mutate random individuals of the population
             population = mutation(population, mutationRate, auftraege, lkws);
+
         }
 
-        // Print final Population Fitnesses
+        //Print Best Solution
         System.out.println("-------------------------------");
-        System.out.println("Final Population Fitness Scores:");
-        int[] fitness = calculateFitnessPopulation(populationSize, auftraege, lkws, population);
+        System.out.println("Best Strategy that was found:");
+        printStrategy(bestSolution, bestSolutionScore);
+    }
+
+    private static void printStrategy(int[][] bestSolution, int bestSolutionScore) {
+        System.out.println("Profit: "+ bestSolutionScore);
+        for (int i = 0; i<bestSolution.length; i++) {
+            System.out.print("Lkw "+ (i+1) + ": ");
+            for (int item : bestSolution[i]) {
+                System.out.printf("%3d", item); // Adjust the width as needed
+            }
+            System.out.println(); // Move to the next line after printing each row
+        }
+    }
+
+    private static int getBestSolutionIndex(int[] fitness) {
+        int bestScore = 0;
+        int bestScoreIndex = 0;
+        for(int i = 0; i<fitness.length; i++){
+            if(fitness[i]>bestScore){
+                bestScore = fitness[i];
+                bestScoreIndex = i;
+            }
+        }
+        return bestScoreIndex;
     }
 
     private static int getNumNegativeFitnessValues(int[] fitness) {
@@ -201,6 +234,8 @@ public class Beladungsstrategie {
     // of the grid determined by the numbers is exchanged. In this case, we take
     // parentB and copy some random auftraege from parentA into it
     private static int[][] verticalBandCrossover(int[][] parentA, int[][] parentB) {
+        int[][] child = Arrays.stream(parentB).map(int[]::clone).toArray(int[][]::new);
+
         // Select two random points for crossover (in the range of Aufträge)
         Random random = new Random();
         int startPoint = random.nextInt(parentA[0].length);
@@ -209,10 +244,10 @@ public class Beladungsstrategie {
         // Copy the segment between the two points from parentA to child
         for (int j = startPoint; j <= endPoint; j++) {
             for (int i = 0; i < parentA.length; i++) {
-                parentB[i][j] = parentA[i][j];
+                child[i][j] = parentA[i][j];
             }
         }
-        return parentB;
+        return child;
     }
 
     private static int selectParent(int[] fitness) {
@@ -340,13 +375,6 @@ public class Beladungsstrategie {
             // Only if solution is Valid, add to population
             if (isValidIndividual(individual, lkws, auftraege)) {
                 population.add(individual);
-                // print
-                // for (int i = 0; i < individual.length; i++) {
-                // for (int j = 0; j < individual[i].length; j++) {
-                // System.out.print(individual[i][j] + " ");
-                // }
-                // System.out.println(); // Move to the next line after printing each row
-                // }
             }
         }
         // Collect to 3D array
