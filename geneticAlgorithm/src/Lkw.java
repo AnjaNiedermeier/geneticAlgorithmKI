@@ -23,4 +23,8 @@ public class Lkw {
     public int getKapaGewicht() {
         return kapaGewicht;
     }
+
+    public int getKmh() {
+        return kmh;
+    }
 }

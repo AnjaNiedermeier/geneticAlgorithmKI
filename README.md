@@ -36,8 +36,23 @@ Generierung der Lösungen unter berücksichtigung der Kapazitätsgrenzen der LKW
 ## 3. Bewertung (Fitnessfunktion)  
 Für die Bewertung der Fitness der Lösungen gibt es mehrere Möglichkeiten nach denen optimiert werden kann. Für ein Unternehmen ist letztendlich die Kosten/Gewinnfunktion ausschlaggebend, weshalb diese verwendet wird. Diese wird berechnet aus den Werten für Strafe, Entlohnung und Bonus unter berücksichtigung der Zeit.
 Der höchste Gewinn bedeutet dabei die beste Lösung.
+
 ## 4. Auswahl
+Dafür wird die Roulette Wheel Selection verwendet, das heißt Individuen mit einem höheren Fitness Wert haben eine proportional höhere Chance als Eltern ausgewählt zu werden. Um die Varianz innerhalb der Population jedoch beizubehalten, können auch Individuen mit einer niedrigeren Fitness vorkommen, dies allerdings nur mit einer geringeren Wahrscheinlichkeit. 
+
+Das funktioniert so:
+1. Aufaddieren aller Fitnesswerte der Population (totalFitness)
+2. Generiere Zufallszahl zwischen 0 und totalFitness
+3. Mappe die Zufallszahl mit dem Individuum, in dessen Range die Zufallszahl liegt
+4. Gib den Index dieses Individuums zurück
+
 ## 5. Reproduktion
+1. **Crossover**
+Generiere aus den n Eltern n neue Strategien
+
+2. **Mutation**
+Mutiere einen gewissen Prozentsatz der neuen Lösungen/aller Lösungen
+
 ## 6. Ersetzung
 ## 7. Terminierungskriterium
 ## 8. Ausgabe

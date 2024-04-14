@@ -39,4 +39,28 @@ public class Auftrag {
     public char getZiel() {
         return ziel;
     }
+
+    public int getEntlohnung() {
+        return entlohnung;
+    }
+
+    public int getBetragBonus() {
+        return betragBonus;
+    }
+
+    public int getBetragStrafe() {
+        return betragStrafe;
+    }
+
+    public int getEntfernung() {
+        return entfernung;
+    }
+
+    public int getZeitlimitBonus() {
+        return zeitlimitBonus;
+    }
+
+    public int getZeitlimitStrafe() {
+        return zeitlimitStrafe;
+    }
 }

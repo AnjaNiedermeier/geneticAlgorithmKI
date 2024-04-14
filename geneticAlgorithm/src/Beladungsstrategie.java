@@ -5,14 +5,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class Beladungsstrategie {
     public static void main(String[] args) {
         // Algorithm Hyperparameters
-        int populationSize = 100;
+        int populationSize = 10;
         int currentRound = 0;
-        int maxRounds = 50;
+        int maxRounds = 1;
         double crossoverRate = 0.5;
         double mutationRate = 0.1;
 
@@ -36,14 +37,86 @@ public class Beladungsstrategie {
             //Berechne fitness der Lösungen
             int[] fitness = new int[populationSize];
             for(int i = 0; i<fitness.length;i++){
-                fitness[i] = calculateFitness(population[i]);
+                fitness[i] = calculateFitness(population[i], auftraege, lkws);
+                System.out.println(fitness[i]);
             }
+            
+            //Select Parents for Reproduction
+            int numParents = (int) Math.round(crossoverRate * populationSize);
+            List<Integer> parentList = new ArrayList<>();
+            while(parentList.size()<numParents){
+                int currentParent = selectParent(fitness);
+                if(!parentList.contains(currentParent)){
+                    parentList.add(currentParent);
+                    System.out.println(currentParent);
+                }
+            }
+            int[] parents = parentList.stream().mapToInt(i -> i).toArray();
+
+            
         }
     }
 
-    private static int calculateFitness(int[][] individual) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'calculateFitness'");
+    private static int selectParent(int[] fitness) {
+        //Calculate total Fitness of population (Roulette Wheel)
+        int totalFitness = 0;
+        for (int i = 0; i<fitness.length; i++) {
+            totalFitness += fitness[i];
+        }
+
+        // Generate a random number between 0 and totalFitness
+        Random random = new Random();
+        int randomNumber = random.nextInt(totalFitness);
+
+        // Find the individual that corresponds with the random number
+        int cumulativeFitness = 0;
+        for (int i = 0; i < fitness.length; i++) {
+            cumulativeFitness += fitness[i];
+            if (cumulativeFitness >= randomNumber) {
+                return i;
+            }
+        }
+        //Default: Give back the last element
+        return fitness.length - 1;
+    }
+
+    private static int calculateFitness(int[][] individual, List<Auftrag> auftraege, List<Lkw> lkws) {
+        int gewinn = 0;
+        //Iteriere über Aufträge j, berechne anzahl ausgefahrener Kisten und Dauer
+        for(int j=0; j<individual[0].length; j++){
+            Auftrag auftrag = auftraege.get(j);
+            int kistenVorgabe = auftrag.getAnzahlKisten();
+            int kistenIndividual = 0;
+            int entfernung = auftrag.getEntfernung();
+            int gewinnAuftrag = 0;
+            double dauer = 0.0;
+            for(int i=0; i<individual.length; i++){
+                kistenIndividual+=individual[i][j];
+                if(individual[i][j]!=0){
+                    double dauerNeu = (entfernung/lkws.get(i).getKmh())*2;
+                    dauerNeu += 1;
+                    dauer = (dauer>dauerNeu)? dauer : dauerNeu;
+                }
+            }
+            //Falls Auftrag Erfüllt
+            if(kistenIndividual == kistenVorgabe){
+                gewinnAuftrag = auftrag.getEntlohnung();
+                //Zeitstrafe oder Bonus?
+                if(dauer>auftrag.getZeitlimitStrafe()){
+                    gewinnAuftrag -= auftrag.getBetragStrafe();
+                }
+                else if(dauer<auftrag.getZeitlimitBonus()){
+                    gewinnAuftrag += auftrag.getBetragBonus();
+                }
+            }
+            else{
+                gewinnAuftrag = - auftrag.getBetragStrafe();
+            }
+            //System.out.println("Gewinn Auftrag "+ j + ": "+ gewinnAuftrag);
+            gewinn += gewinnAuftrag;
+        }
+        //System.out.println("Gesamtgewinn des Individuums: "+ gewinn);
+        return gewinn;
     }
 
     private static int[][][] initPopulation(int populationSize, int numLkws, int numAuftraege, List<Lkw> lkws,
@@ -107,6 +180,13 @@ public class Beladungsstrategie {
             // Only if solution is Valid, add to population
             if (isValidIndividual(individual, lkws, auftraege)) {
                 population.add(individual);
+                //print
+                // for (int i = 0; i < individual.length; i++) {
+                //     for (int j = 0; j < individual[i].length; j++) {
+                //         System.out.print(individual[i][j] + " ");
+                //     }
+                //     System.out.println(); // Move to the next line after printing each row
+                // }
             }
         }
         // Collect to 3D array
