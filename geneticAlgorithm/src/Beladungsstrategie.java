@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -12,10 +13,9 @@ public class Beladungsstrategie {
     public static void main(String[] args) {
         // Algorithm Hyperparameters
         int populationSize = 100;
-        int currentRound = 0;
-        int maxRounds = 1;
+        int maxRounds = 100;
         double crossoverRate = 0.5;
-        double mutationRate = 0.1;
+        double mutationRate = 0.0;
 
         List<Auftrag> auftraege;
         List<Lkw> lkws;
@@ -33,41 +33,123 @@ public class Beladungsstrategie {
 
         // Wiederhole für maxRounds Runden
         for (int round = 1; round <= maxRounds; round++) {
+
             System.out.println("Runde " + round + ": ");
             // Berechne fitness der Lösungen
-            int[] fitness = new int[populationSize];
-            for (int i = 0; i < fitness.length; i++) {
-                fitness[i] = calculateFitness(population[i], auftraege, lkws);
-                System.out.println(fitness[i]);
-            }
+            int[] fitness = calculateFitnessPopulation(populationSize, auftraege, lkws, population);
 
             // Select Parents for Reproduction
-            int numParents = (int) Math.round(crossoverRate * populationSize);
-            List<Integer> parentList = new ArrayList<>();
-            while (parentList.size() < numParents) {
-                int currentParent = selectParent(fitness);
-                if (!parentList.contains(currentParent)) {
-                    parentList.add(currentParent);
-                    System.out.println(currentParent);
-                }
-            }
-            int[] parentIndices = parentList.stream().mapToInt(i -> i).toArray();
-            // Get parents from parentIndices
-            int[][][] parents = new int[numParents][lkws.size()][auftraege.size()];
-            int index = 0;
-            for (int i : parentIndices) {
-                parents[index++] = population[i];
-            }
+            int[][][] parents = selectParents(populationSize, crossoverRate, auftraege, lkws, population, fitness);
+
             // Generate n offspring individuals from the n selected parents
             int[][][] offspring = generateOffspring(parents, lkws, auftraege);
 
-            //Add offspring on random locations in the population Array
-			Random random = new Random();
-        	for(int i = 0; i<offspring.length; i++){
-				int index_replacement = random.nextInt(populationSize);
-				population[index_replacement] = offspring[i];
-			}
+            // Replace population with offspring individuals
+            replacePopulation(population, offspring, fitness);
+
+            // Mutate random individuals of the population
+            // population = mutation(population, mutationRate);
         }
+    }
+
+    private static int[][][] mutation(int[][][] population, double mutationRate) {
+        int mutationAmount = (int) Math.ceil(mutationRate * population.length);
+        // Choose random contracts to mutate
+        Random random = new Random();
+        for (int i = 0; i < mutationAmount; i++) {
+            int indexMutation = random.nextInt(population.length);
+            int[][] mutationCandidate = population[indexMutation];
+            mutationCandidate = mutateCandidate(mutationCandidate, mutationRate);
+            population[indexMutation] = mutationCandidate;
+        }
+        return population;
+    }
+
+    private static int[][] mutateCandidate(int[][] mutationCandidate, double mutationRate) {
+        int[][] mutatedCandidate = new int[mutationCandidate.length][mutationCandidate[0].length];
+        Random random = new Random();
+        for (int i = 0; i < mutationCandidate.length; i++) {
+            for (int j = 0; j < mutationCandidate[i].length; j++) {
+                if (random.nextDouble() < mutationRate) {
+                    mutatedCandidate[i][j] = random.nextInt(10);
+                } else {
+                    mutatedCandidate[i][j] = mutationCandidate[i][j];
+                }
+            }
+        }
+        return mutatedCandidate;
+    }
+
+    // Get the worst individuals of the population and replace them
+    private static void replacePopulation(int[][][] population, int[][][] offspring, int[] fitness) {
+        int[] worstIndices = getWorstIndividuals(fitness, offspring.length);
+        int index = 0;
+        for (int i = 0; i < worstIndices.length; i++) {
+            population[i] = offspring[index++];
+        }
+    }
+
+    private static int[] getWorstIndividuals(int[] fitness, int n) {
+        // Create a copy of the original array
+        int[] sortedFitness = Arrays.copyOf(fitness, fitness.length);
+        Arrays.sort(sortedFitness);
+        int[] worstIndices = new int[n];
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < fitness.length; j++) {
+                if (fitness[j] == sortedFitness[i]) {
+                    worstIndices[i] = j;
+                }
+            }
+        }
+        return worstIndices;
+    }
+
+    private static int[][][] selectParents(int populationSize, double crossoverRate, List<Auftrag> auftraege,
+            List<Lkw> lkws, int[][][] population, int[] fitness) {
+        int numParents = (int) Math.round(crossoverRate * populationSize);
+
+        List<Integer> parentList = new ArrayList<>();
+        while (parentList.size() < numParents) {
+            int currentParent = selectParent(fitness);
+            if (!parentList.contains(currentParent)) {
+                parentList.add(currentParent);
+            }
+        }
+
+        int[] parentIndices = parentList.stream().mapToInt(i -> i).toArray();
+        // Get parents from parentIndices
+        int[][][] parents = new int[numParents][lkws.size()][auftraege.size()];
+        int index = 0;
+        for (int i : parentIndices) {
+            parents[index++] = population[i];
+        }
+        return parents;
+    }
+
+    private static int[] calculateFitnessPopulation(int populationSize, List<Auftrag> auftraege, List<Lkw> lkws,
+            int[][][] population) {
+        int[] fitness = new int[populationSize];
+        for (int i = 0; i < fitness.length; i++) {
+            fitness[i] = calculateFitnessIndividual(population[i], auftraege, lkws);
+        }
+        // Print average, highest an lowest fitness
+        int fitnessSum = 0;
+        int minFitness = Integer.MAX_VALUE;
+        int maxFitness = Integer.MIN_VALUE;
+        for (int fit : fitness) {
+            fitnessSum += fit;
+            if(fit < minFitness){
+                minFitness = fit;
+            }
+            if(fit > maxFitness){
+                maxFitness = fit;
+            }
+        }
+        System.out.println("Average Fitness: " + fitnessSum / fitness.length);
+        System.out.println("Min Fitness: " + minFitness);
+        System.out.println("Max Fitness: " + maxFitness);
+        return fitness;
     }
 
     private static int[][][] generateOffspring(int[][][] parents, List<Lkw> lkws, List<Auftrag> auftraege) {
@@ -90,7 +172,7 @@ public class Beladungsstrategie {
         // Fill Children with crossovers from combinations of two parents
         for (int i = 0; i < num_parents; i++) {
             int[][] child = verticalBandCrossover(parents[combinations[i][0]], parents[combinations[i][1]]);
-            if(isValidIndividual(child, lkws, auftraege)){
+            if (isValidIndividual(child, lkws, auftraege)) {
                 childrenList.add(child);
             }
         }
@@ -139,7 +221,7 @@ public class Beladungsstrategie {
         return fitness.length - 1;
     }
 
-    private static int calculateFitness(int[][] individual, List<Auftrag> auftraege, List<Lkw> lkws) {
+    private static int calculateFitnessIndividual(int[][] individual, List<Auftrag> auftraege, List<Lkw> lkws) {
         int gewinn = 0;
         // Iteriere über Aufträge j, berechne anzahl ausgefahrener Kisten und Dauer
         for (int j = 0; j < individual[0].length; j++) {
