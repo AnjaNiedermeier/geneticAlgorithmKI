@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public class Beladungsstrategie {
     public static void main(String[] args) {
         // Algorithm Hyperparameters
-        int populationSize = 10;
+        int populationSize = 100;
         int currentRound = 0;
         int maxRounds = 1;
         double crossoverRate = 0.5;
@@ -31,36 +31,95 @@ public class Beladungsstrategie {
         population = initPopulation(populationSize, lkws.size(), auftraege.size(), lkws, auftraege);
         System.out.println("Finished Initialization");
 
-        //Wiederhole für maxRounds Runden
-        for(int round = 1; round<=maxRounds; round++){
-            System.out.println("Runde "+ round + ": ");
-            //Berechne fitness der Lösungen
+        // Wiederhole für maxRounds Runden
+        for (int round = 1; round <= maxRounds; round++) {
+            System.out.println("Runde " + round + ": ");
+            // Berechne fitness der Lösungen
             int[] fitness = new int[populationSize];
-            for(int i = 0; i<fitness.length;i++){
+            for (int i = 0; i < fitness.length; i++) {
                 fitness[i] = calculateFitness(population[i], auftraege, lkws);
                 System.out.println(fitness[i]);
             }
-            
-            //Select Parents for Reproduction
+
+            // Select Parents for Reproduction
             int numParents = (int) Math.round(crossoverRate * populationSize);
             List<Integer> parentList = new ArrayList<>();
-            while(parentList.size()<numParents){
+            while (parentList.size() < numParents) {
                 int currentParent = selectParent(fitness);
-                if(!parentList.contains(currentParent)){
+                if (!parentList.contains(currentParent)) {
                     parentList.add(currentParent);
                     System.out.println(currentParent);
                 }
             }
-            int[] parents = parentList.stream().mapToInt(i -> i).toArray();
+            int[] parentIndices = parentList.stream().mapToInt(i -> i).toArray();
+            // Get parents from parentIndices
+            int[][][] parents = new int[numParents][lkws.size()][auftraege.size()];
+            int index = 0;
+            for (int i : parentIndices) {
+                parents[index++] = population[i];
+            }
+            // Generate n offspring individuals from the n selected parents
+            int[][][] offspring = generateOffspring(parents, lkws, auftraege);
 
-            
+            //Add offspring on random locations in the population Array
+			Random random = new Random();
+        	for(int i = 0; i<offspring.length; i++){
+				int index_replacement = random.nextInt(populationSize);
+				population[index_replacement] = offspring[i];
+			}
         }
     }
 
+    private static int[][][] generateOffspring(int[][][] parents, List<Lkw> lkws, List<Auftrag> auftraege) {
+        int num_parents = parents.length;
+        // Create a List to store valid offspring individuals
+        List<int[][]> childrenList = new ArrayList<>();
+
+        // Generate Combinations of two parents to crossover
+        int[][] combinations = new int[num_parents][2];
+        List<Integer> numbers = new ArrayList<>();
+        for (int i = 0; i < num_parents; i++) {
+            numbers.add(i);
+        }
+        Collections.shuffle(numbers);
+        // Fill the array with combinations of tuples
+        for (int i = 0; i < num_parents; i++) {
+            combinations[i][0] = numbers.get(i);
+            combinations[i][1] = numbers.get((i + 1) % num_parents); // Ensuring no tuple contains the same number
+        }
+        // Fill Children with crossovers from combinations of two parents
+        for (int i = 0; i < num_parents; i++) {
+            int[][] child = verticalBandCrossover(parents[combinations[i][0]], parents[combinations[i][1]]);
+            if(isValidIndividual(child, lkws, auftraege)){
+                childrenList.add(child);
+            }
+        }
+        int[][][] childrenArray = childrenList.stream().toArray(int[][][]::new);
+        return childrenArray;
+    }
+
+    // Two random numbers are generated , and information inside the vertical region
+    // of the grid determined by the numbers is exchanged. In this case, we take
+    // parentB and copy some random auftraege from parentA into it
+    private static int[][] verticalBandCrossover(int[][] parentA, int[][] parentB) {
+        // Select two random points for crossover (in the range of Aufträge)
+        Random random = new Random();
+        int startPoint = random.nextInt(parentA[0].length);
+        int endPoint = random.nextInt(parentA[0].length - startPoint) + startPoint;
+
+        // Copy the segment between the two points from parentA to child
+        for (int j = startPoint; j <= endPoint; j++) {
+            for (int i = 0; i < parentA.length; i++) {
+                parentB[i][j] = parentA[i][j];
+            }
+        }
+        return parentB;
+    }
+
     private static int selectParent(int[] fitness) {
-        //Calculate total Fitness of population (Roulette Wheel)
+        // Calculate total Fitness of population (Roulette Wheel)
         int totalFitness = 0;
-        for (int i = 0; i<fitness.length; i++) {
+        for (int i = 0; i < fitness.length; i++) {
             totalFitness += fitness[i];
         }
 
@@ -76,46 +135,44 @@ public class Beladungsstrategie {
                 return i;
             }
         }
-        //Default: Give back the last element
+        // Default: Give back the last element
         return fitness.length - 1;
     }
 
     private static int calculateFitness(int[][] individual, List<Auftrag> auftraege, List<Lkw> lkws) {
         int gewinn = 0;
-        //Iteriere über Aufträge j, berechne anzahl ausgefahrener Kisten und Dauer
-        for(int j=0; j<individual[0].length; j++){
+        // Iteriere über Aufträge j, berechne anzahl ausgefahrener Kisten und Dauer
+        for (int j = 0; j < individual[0].length; j++) {
             Auftrag auftrag = auftraege.get(j);
             int kistenVorgabe = auftrag.getAnzahlKisten();
             int kistenIndividual = 0;
             int entfernung = auftrag.getEntfernung();
             int gewinnAuftrag = 0;
             double dauer = 0.0;
-            for(int i=0; i<individual.length; i++){
-                kistenIndividual+=individual[i][j];
-                if(individual[i][j]!=0){
-                    double dauerNeu = (entfernung/lkws.get(i).getKmh())*2;
+            for (int i = 0; i < individual.length; i++) {
+                kistenIndividual += individual[i][j];
+                if (individual[i][j] != 0) {
+                    double dauerNeu = (entfernung / lkws.get(i).getKmh()) * 2;
                     dauerNeu += 1;
-                    dauer = (dauer>dauerNeu)? dauer : dauerNeu;
+                    dauer = (dauer > dauerNeu) ? dauer : dauerNeu;
                 }
             }
-            //Falls Auftrag Erfüllt
-            if(kistenIndividual == kistenVorgabe){
+            // Falls Auftrag Erfüllt
+            if (kistenIndividual == kistenVorgabe) {
                 gewinnAuftrag = auftrag.getEntlohnung();
-                //Zeitstrafe oder Bonus?
-                if(dauer>auftrag.getZeitlimitStrafe()){
+                // Zeitstrafe oder Bonus?
+                if (dauer > auftrag.getZeitlimitStrafe()) {
                     gewinnAuftrag -= auftrag.getBetragStrafe();
-                }
-                else if(dauer<auftrag.getZeitlimitBonus()){
+                } else if (dauer < auftrag.getZeitlimitBonus()) {
                     gewinnAuftrag += auftrag.getBetragBonus();
                 }
+            } else {
+                gewinnAuftrag = -auftrag.getBetragStrafe();
             }
-            else{
-                gewinnAuftrag = - auftrag.getBetragStrafe();
-            }
-            //System.out.println("Gewinn Auftrag "+ j + ": "+ gewinnAuftrag);
+            // System.out.println("Gewinn Auftrag "+ j + ": "+ gewinnAuftrag);
             gewinn += gewinnAuftrag;
         }
-        //System.out.println("Gesamtgewinn des Individuums: "+ gewinn);
+        // System.out.println("Gesamtgewinn des Individuums: "+ gewinn);
         return gewinn;
     }
 
@@ -129,7 +186,7 @@ public class Beladungsstrategie {
             // Create individual 2D-array
             int[][] individual = new int[numLkws][numAuftraege];
 
-            //Permutation List to randomly fill the individual
+            // Permutation List to randomly fill the individual
             ArrayList<Integer> auftragPermutationList = new ArrayList<>();
             for (int i = 0; i < numAuftraege; i++) {
                 auftragPermutationList.add(i);
@@ -149,7 +206,7 @@ public class Beladungsstrategie {
                 }
                 Collections.shuffle(lkwPermutationList, rand);
 
-                //Check LKW Capacity limitations
+                // Check LKW Capacity limitations
                 while (remainingKisten > 0 && lkwPermutationList.size() > 0) {
                     int currentLkw = lkwPermutationList.remove(0);
                     int remainingGewicht = remainingKisten * kistenGewicht;
@@ -180,12 +237,12 @@ public class Beladungsstrategie {
             // Only if solution is Valid, add to population
             if (isValidIndividual(individual, lkws, auftraege)) {
                 population.add(individual);
-                //print
+                // print
                 // for (int i = 0; i < individual.length; i++) {
-                //     for (int j = 0; j < individual[i].length; j++) {
-                //         System.out.print(individual[i][j] + " ");
-                //     }
-                //     System.out.println(); // Move to the next line after printing each row
+                // for (int j = 0; j < individual[i].length; j++) {
+                // System.out.print(individual[i][j] + " ");
+                // }
+                // System.out.println(); // Move to the next line after printing each row
                 // }
             }
         }

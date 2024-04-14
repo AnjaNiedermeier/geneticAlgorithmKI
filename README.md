@@ -49,10 +49,12 @@ Das funktioniert so:
 ## 5. Reproduktion
 1. **Crossover**
 Generiere aus den n Eltern n neue Strategien
-
+Multiple Variants are implemented based of this source: https://content.wolfram.com/sites/13/2018/02/05-3-4.pdf
+First one is Vertical band Crossover
 2. **Mutation**
 Mutiere einen gewissen Prozentsatz der neuen Lösungen/aller Lösungen
 
 ## 6. Ersetzung
+Wähle numParents zufällige Individuen aus, die ersetzt werden mit den neu generierten Kindern. Dadurch bleibt die Populationsgröße gleich.
 ## 7. Terminierungskriterium
 ## 8. Ausgabe
