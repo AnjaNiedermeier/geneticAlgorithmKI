@@ -2,17 +2,18 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class Beladungsstrategie {
     public static void main(String[] args) {
         //Algorithm Hyperparameters
-        int population_size = 2;
-        int current_round = 0;
-        int max_rounds = 50;
-        double crossover_rate = 0.5;
-        double mutation_rate = 0.1;
+        int populationSize = 2;
+        int currentRound = 0;
+        int maxRounds = 50;
+        double crossoverRate = 0.5;
+        double mutationRate = 0.1;
 
         List<Auftrag> auftraege;
         List<Lkw> lkws;
@@ -25,59 +26,125 @@ public class Beladungsstrategie {
 
         //Initialisieren der Anfangspopulation
         System.out.println("Initialisiere Anfangspopulation...");
-        population = initPopulation(population_size, lkws.size(), auftraege.size(), lkws, auftraege);
+        population = initPopulation(populationSize, lkws.size(), auftraege.size(), lkws, auftraege);
+        System.out.println("Finished");
     }
 
-    private static int[][][] initPopulation(int population_size, int num_lkws, int num_auftraege, List<Lkw> lkws, List<Auftrag> auftraege) {
+    private static int[][][] initPopulation(int populationSize, int numLkws, int numAuftraege, List<Lkw> lkws, List<Auftrag> auftraege) {
         //int[][][] population = new int[population_size][num_lkws][num_auftraege];
-        
+        Random rand = new Random();
+
         // Create a List to store valid individuals
         List<int[][]> population = new ArrayList<>();
-        while(population.size()<population_size){
+        while(population.size()<populationSize){
+            ArrayList<Integer> auftragPermutationList = new ArrayList<>();
+            for(int i=0;i<numAuftraege;i++){
+                auftragPermutationList.add(i);
+            }
+        Collections.shuffle(auftragPermutationList, rand);
             //Create individual 2D-array
-            int[][] individual = new int[num_lkws][num_auftraege];
-            //Fill with random values between 0 and 50
-            Random random = new Random();
-            for (int i = 0; i < num_lkws; i++) {
-                for (int j = 0; j < num_auftraege; j++) {
-                    individual[i][j] = random.nextInt(10);
+            int[][] individual = new int[numLkws][numAuftraege];
+            //Randomly fill, but consider limitation
+            while(auftragPermutationList.size()>0){
+                int currentAuftrag = auftragPermutationList.remove(0);
+                System.out.println("Current AUftrag: "+ currentAuftrag);
+                int remainingKisten = auftraege.get(currentAuftrag).getAnzahlKisten();
+                int kistenGewicht = auftraege.get(currentAuftrag).getGewichtKisten();
+                //Create lkw permutation List
+                ArrayList<Integer> lkwPermutationList = new ArrayList<>();
+                for(int i=0;i<numLkws;i++){
+                    lkwPermutationList.add(i);
+                }
+                Collections.shuffle(lkwPermutationList, rand);
+
+                while(remainingKisten>0 && lkwPermutationList.size()>0){
+                    int currentLkw = lkwPermutationList.remove(0);
+                    int remainingGewicht = remainingKisten*kistenGewicht;
+                    //Check if current lkw has capacity
+                    int lkwCapacityKisten = calcLkwCapacityKisten(individual, lkws, currentLkw);
+                    int lkwCapacityGewicht = calcLkwCapacityGewicht(individual, lkws, currentLkw, auftraege);
+                    if(lkwCapacityKisten > 0 && lkwCapacityGewicht > 0){
+                        if(lkwCapacityKisten>remainingKisten && lkwCapacityGewicht>remainingGewicht){
+                            individual[currentLkw][currentAuftrag]=remainingKisten;
+                            remainingKisten = 0;
+                        }
+                        else{
+                            //find out how many kisten the lkw can take
+                            int gewichtKistenLimit = (int) lkwCapacityGewicht/kistenGewicht;
+                            gewichtKistenLimit = (lkwCapacityKisten>gewichtKistenLimit) ? gewichtKistenLimit : lkwCapacityKisten;
+                            //Fill Lkw with calculated kistenLimit
+                            individual[currentLkw][currentAuftrag]=gewichtKistenLimit;
+                            remainingKisten -= gewichtKistenLimit;
+                        }
+                    }
                 }
             }
+            
             //Only if solution is Valid, add to population
             if(isValidIndividual(individual, lkws, auftraege)){
                 population.add(individual);
+                //print
+                for (int i = 0; i < individual.length; i++) {
+                    for (int j = 0; j < individual[i].length; j++) {
+                        System.out.print(individual[i][j] + " ");
+                    }
+                    System.out.println(); // Move to the next line after printing each row
+                }
             }
         }
         //Collect to 3D array
-        int[][][] population_array = population.stream().toArray(int[][][]::new);
+        int[][][] populationArray = population.stream().toArray(int[][][]::new);
         
-        return population_array;
+        return populationArray;
+    }
+
+    private static int calcLkwCapacityGewicht(int[][] individual, List<Lkw> lkws, int lkw, List<Auftrag> auftraege) {
+        //Ein LKW darf nicht mehr Kisten fahren als erlaubt
+        int kapaGewicht = lkws.get(lkw).getKapaGewicht();
+        int sumGewicht = 0;
+        for(int j = 0; j<individual[lkw].length; j++){
+            sumGewicht+=individual[lkw][j]*auftraege.get(j).getGewichtKisten();
+        }
+        return kapaGewicht-sumGewicht;
+    }
+
+    private static int calcLkwCapacityKisten(int[][] individual, List<Lkw> lkws, int lkw) {
+        //Ein LKW darf nicht mehr Kisten fahren als erlaubt
+        int kapaKisten = lkws.get(lkw).getKapaKisten();
+        int sumKisten = 0;
+        for(int j = 0; j<individual[lkw].length; j++){
+            sumKisten+=individual[lkw][j];
+        }
+        return kapaKisten-sumKisten;
     }
 
     private static boolean isValidIndividual(int[][] individual, List<Lkw> lkws, List<Auftrag> auftraege) {
+        System.out.println("Check if individual is valid...");
         //Ein LKW darf nicht mehr Kisten fahren als erlaubt
         //Ein LKW darf nicht mehr Gewicht fahren als erlaubt
         for(int i = 0; i<individual.length; i++){
-            int kapa_kisten = lkws.get(i).getKapa_kisten();
-            int kapa_gewicht = lkws.get(i).getKapa_gewicht();
-            int sum_kisten = 0;
-            int sum_gewicht = 0;
+            int kapaKisten = lkws.get(i).getKapaKisten();
+            int kapaGewicht = lkws.get(i).getKapaGewicht();
+            int sumKisten = 0;
+            int sumGewicht = 0;
             for(int j = 0; j<individual[i].length; j++){
-                sum_kisten+=individual[i][j];
-                sum_gewicht+=individual[i][j]*auftraege.get(j).getGewicht_kisten();
+                sumKisten+=individual[i][j];
+                sumGewicht+=individual[i][j]*auftraege.get(j).getGewichtKisten();
             }
-            if(sum_kisten > kapa_kisten || sum_gewicht > kapa_gewicht){
+            if(sumKisten > kapaKisten || sumGewicht > kapaGewicht){
+                System.out.println("Individual does not fulfill kisten or gewichts limit of LKWS");
                 return false;
             }
         }
         //Es sollen genauso viele Kisten transportiert werden wie für jeden Auftrag nötig
         for(int j = 0; j<individual[0].length;j++){
-            int auftrag_groeße = auftraege.get(j).getAnzahl_kisten();
-            int sum_kisten = 0;
+            int auftragGroeße = auftraege.get(j).getAnzahlKisten();
+            int sumKisten = 0;
             for(int i = 0; i<individual.length; i++){
-                sum_kisten+=individual[i][j];
+                sumKisten+=individual[i][j];
             }
-            if(sum_kisten != auftrag_groeße){
+            if(sumKisten != auftragGroeße){
+                System.out.println("Individual does not fulfill auftrags größe");
                 return false;
             }
         }
@@ -86,15 +153,15 @@ public class Beladungsstrategie {
             char ziel = ' ';
             for(int j = 0; j<individual[i].length; j++){
                 if(individual[i][j]!=0){
-                    char next_ziel = auftraege.get(j).getZiel();
-                    if(next_ziel != ziel && ziel !=' '){
+                    char nextZiel = auftraege.get(j).getZiel();
+                    if(nextZiel != ziel && ziel !=' '){
+                        System.out.println("Individual does not fulfill Ziel restrictions");
                         return false;
                     }
-                    ziel = next_ziel;
+                    ziel = nextZiel;
                 }
             }
         }
-
         return true;
     }
 
