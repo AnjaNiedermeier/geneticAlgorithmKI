@@ -25,6 +25,17 @@ class Auftrag {
 }
 
 class Beladungsstrategie {
+  - {static} populationSize: int
+  {static} maxRounds: int
+  {static} crossoverRate: double
+  {static} initialMutationRate: double
+  {static} finalMutationRate: double
+  {static} mutationRate: double
+
+  {static} auftraege: Auftrag[]
+  {static} lkws: Lkw[]
+  {static} population: Population
+
   + {static} main(args): void
   - {static} readLkwsFromCSV(pathToFile): Lkw[]
   - {static} readAuftraegeFromCSV(pathToFile): Auftrag[]
@@ -35,18 +46,26 @@ class Population {
   - fitness: int[]
 
   + Population(size, lkws, auftraege)
-  + calcFitness(lkws, auftraege)
-  + getBestSolutionIndex()
-  + selectParentsRoulette(numParents)
-  + selectParentsBestN(numParents)
-  + generateOffspring(parents, lkws, auftraege)
+  - initPopulation(populationSize, lkws, auftraege): Individual[]
+  + calcFitness(lkws, auftraege): void
+  + getBestSolutionIndex(): int
+
+  + selectParentsRoulette(numParents): Individual[]
+  - selectParentRoulette(): int
+  + selectParentsBestN(numParents): Individual[]
+  - getParentsFromIndices(numParents, parentIndices): Individual[]
+  
+  + generateOffspring(parents, lkws, auftraege): Individual[]
+  - uniformCrossover(parentA, parentB): Individual
+  - verticalBandCrossover(parentA, parentB): Individual
+  - horizontalBandCrossover(parentA, parentB): Individual
+  - blockCrossover(parentA, parentB): Individual
+
   + mutation(populationSubset, mutationRate, auftraege, lkws)
   + replacePopulation(offspring)
-  + getFitness()
-  + getPopulation()
+  
   + printFitnessStats()
 
-  - initPopulation(populationSize, lkws, auftraege)
   - getNHighestIndices(array, n)
   - getNLowestIndices(array, n)
 }
@@ -69,6 +88,8 @@ class Individual {
   - calcLkwCapacityKisten(individual, lkws, lkw): int
 }
 
-
+Beladungsstrategie o-- Population
+Beladungsstrategie o-- Lkw
+Beladungsstrategie o-- Auftrag
 Population o-- Individual
 @enduml

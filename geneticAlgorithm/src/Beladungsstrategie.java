@@ -5,20 +5,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Beladungsstrategie {
+    // Algorithm Hyperparameters
+    private static int populationSize = 2000;
+    private static int maxRounds = 1000;
+    private static double crossoverRate = 0.2;
+
+    private static final double initialMutationRate = 0.2;
+    private static final double finalMutationRate = 0.6;
+    private static double mutationRate = initialMutationRate;
+
+    private static Auftrag[] auftraege;
+    private static Lkw[] lkws;
+    private static Population population;
 
     public static void main(String[] args) {
-        // Algorithm Hyperparameters
-        int populationSize = 2000;
-        int maxRounds = 1000;
-        double crossoverRate = 0.2;
-
-        final double initialMutationRate = 0.2;
-        final double finalMutationRate = 0.6;
-        double mutationRate = initialMutationRate;
-
-        Auftrag[] auftraege;
-        Lkw[] lkws;
-        Population population;
 
         // Einlesen von LKWs und Aufträgen
         System.out.println("Einlesen der Aufträge und LKWs...");
