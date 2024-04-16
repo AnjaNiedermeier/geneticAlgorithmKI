@@ -1,5 +1,10 @@
 @startuml
 
+title UML Diagramm
+
+' This is a subtitle or additional info
+' You can add any text here to provide extra context or information
+
 class Lkw {
   - nr: int
   - kapaKisten: int
@@ -26,15 +31,15 @@ class Auftrag {
 
 class Beladungsstrategie {
   - {static} populationSize: int
-  {static} maxRounds: int
-  {static} crossoverRate: double
-  {static} initialMutationRate: double
-  {static} finalMutationRate: double
-  {static} mutationRate: double
+  - {static} maxRounds: int
+  - {static} crossoverRate: double
+  - {static} initialMutationRate: double
+  - {static} finalMutationRate: double
+  - {static} mutationRate: double
 
-  {static} auftraege: Auftrag[]
-  {static} lkws: Lkw[]
-  {static} population: Population
+  - {static} auftraege: Auftrag[]
+  - {static} lkws: Lkw[]
+  - {static} population: Population
 
   + {static} main(args): void
   - {static} readLkwsFromCSV(pathToFile): Lkw[]
@@ -61,13 +66,13 @@ class Population {
   - horizontalBandCrossover(parentA, parentB): Individual
   - blockCrossover(parentA, parentB): Individual
 
-  + mutation(populationSubset, mutationRate, auftraege, lkws)
-  + replacePopulation(offspring)
+  + mutation(populationSubset, mutationRate, auftraege, lkws): Individual[]
+  + replacePopulation(offspring): void
   
-  + printFitnessStats()
+  + printFitnessStats(): void
 
-  - getNHighestIndices(array, n)
-  - getNLowestIndices(array, n)
+  - getNHighestIndices(array, n): int[]
+  - getNLowestIndices(array, n): int[]
 }
 
 class Individual {
@@ -75,14 +80,15 @@ class Individual {
 
   + Individual(individual)
   + Individual(lkws, auftraege)
+  - createRandomIndividual(lkws, auftraege): int[][]
   + calculateFitness(auftraege, lkws): int
   + isValid(lkws, auftraege): boolean
+
   + mutateSwapRow(): void
   + mutateAdd(): void
-  + printStrategy(bestSolutionScore): void
-  + getIndividual(): int[][]
 
-  - createRandomIndividual(lkws, auftraege): int[][]
+  + printStrategy(bestSolutionScore): void
+
   - lkwHasAnotherZiel(individual, lkws, currentLkw, currentTarget, auftraege): boolean
   - calcLkwCapacityGewicht(individual, lkws, lkw, auftraege): int
   - calcLkwCapacityKisten(individual, lkws, lkw): int
@@ -92,4 +98,6 @@ Beladungsstrategie o-- Population
 Beladungsstrategie o-- Lkw
 Beladungsstrategie o-- Auftrag
 Population o-- Individual
+
+center footer Excluding Getter and Setter Methods
 @enduml
