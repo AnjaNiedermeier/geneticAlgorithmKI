@@ -7,15 +7,13 @@ import java.util.Map;
 import java.util.Random;
 
 public class Population {
-    Individual[] population;
-    int[] fitness;
-    int size;
+    private Individual[] population;
+    private int[] fitness;
 
     public Population(int size, Lkw[] lkws, Auftrag[] auftraege) {
         population = initPopulation(size, lkws, auftraege);
         fitness = new int[size];
         calcFitness(lkws, auftraege);
-        this.size = size;
     }
  
     public void calcFitness(Lkw[] lkws, Auftrag[] auftraege) {
@@ -148,13 +146,13 @@ public class Population {
 
     //CROSSOVER OPTIONS
     private Individual uniformCrossover(Individual parentA, Individual parentB) {
-        int[][] child = Arrays.stream(parentB.individual).map(int[]::clone).toArray(int[][]::new);
+        int[][] child = Arrays.stream(parentB.getIndividual()).map(int[]::clone).toArray(int[][]::new);
         Random random = new Random();
         // Iterate through array, with 50% chance, replace parentB's gene with parentA's
         for (int i = 0; i < child.length; i++) {
             for (int j = 0; j < child[0].length; j++) {
                 if(random.nextDouble()<0.5){
-                    child[i][j] = parentA.individual[i][j];
+                    child[i][j] = parentA.getIndividual()[i][j];
                 }
             }
         }
@@ -165,7 +163,7 @@ public class Population {
     // of the grid determined by the numbers is exchanged. In this case, we take
     // parentB and copy some random auftraege from parentA into it
     private Individual verticalBandCrossover(Individual parentA, Individual parentB) {
-        int[][] child = Arrays.stream(parentB.individual).map(int[]::clone).toArray(int[][]::new);
+        int[][] child = Arrays.stream(parentB.getIndividual()).map(int[]::clone).toArray(int[][]::new);
 
         // Select two random points for crossover (in the range of Aufträge)
         Random random = new Random();
@@ -174,15 +172,15 @@ public class Population {
 
         // Copy the segment between the two points from parentA to child
         for (int j = startPoint; j <= endPoint; j++) {
-            for (int i = 0; i < parentA.individual.length; i++) {
-                child[i][j] = parentA.individual[i][j];
+            for (int i = 0; i < parentA.getIndividual().length; i++) {
+                child[i][j] = parentA.getIndividual()[i][j];
             }
         }
         return new Individual(child);
     }
 
     private Individual horizontalBandCrossover(Individual parentA, Individual parentB) {
-        int[][] child = Arrays.stream(parentB.individual).map(int[]::clone).toArray(int[][]::new);
+        int[][] child = Arrays.stream(parentB.getIndividual()).map(int[]::clone).toArray(int[][]::new);
 
         // Select two random points for crossover (in the range of LKW)
         Random random = new Random();
@@ -191,15 +189,15 @@ public class Population {
 
         // Copy the segment between the two points from parentA to child
         for (int i = startPoint; i <= endPoint; i++) {
-            for (int j = 0; j < parentA.individual[0].length; j++) {
-                child[i][j] = parentA.individual[i][j];
+            for (int j = 0; j < parentA.getIndividual()[0].length; j++) {
+                child[i][j] = parentA.getIndividual()[i][j];
             }
         }
         return new Individual(child);
     }
 
     private Individual blockCrossover(Individual parentA, Individual parentB) {
-        int[][] child = Arrays.stream(parentB.individual).map(int[]::clone).toArray(int[][]::new);
+        int[][] child = Arrays.stream(parentB.getIndividual()).map(int[]::clone).toArray(int[][]::new);
 
         Random random = new Random();
         // Select two random points for crossover (in the range of LKW)
@@ -213,7 +211,7 @@ public class Population {
         // Copy the segment between the 4 pointss from parentA to child
         for (int i = startPointLkw; i <= endPointLkw; i++) {
             for (int j = startPointAuftraege; j < endPointAuftraege; j++) {
-                child[i][j] = parentA.individual[i][j];
+                child[i][j] = parentA.getIndividual()[i][j];
             }
         }
         return new Individual(child);
@@ -227,7 +225,7 @@ public class Population {
         Random random = new Random();
         for (int i = 0; i < mutationAmount; i++) {
             int indexMutation = random.nextInt(populationSubset.length);
-            Individual mutationCandidate = new Individual(populationSubset[indexMutation].individual);
+            Individual mutationCandidate = new Individual(populationSubset[indexMutation].getIndividual());
             mutationCandidate.mutateSwapRow();
             mutationCandidate.mutateAdd();
             if (mutationCandidate.isValid(lkws, auftraege)) {

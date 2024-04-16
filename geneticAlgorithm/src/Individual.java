@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Random;
 
 public class Individual {
-    int[][] individual;
+    private int[][] individual;
 
     public Individual(int[][] individual) {
         this.individual = individual;
@@ -224,6 +224,11 @@ private int calcLkwCapacityKisten(int[][] individual, Lkw[] lkws, int lkw) {
         sumKisten += individual[lkw][j];
     }
     return kapaKisten - sumKisten;
+}
+
+//GETTER
+public int[][] getIndividual() {
+    return individual;
 }
 
 }

@@ -9,6 +9,8 @@
 [O] Terminierungskriterium  
 [O] Ausgabe  
 
+Klassendiagramm ist ohne Getter und Setter Methoden
+
 ## 1. Einlesen der Aufträge und LKWs
 
 ## 2. Initialisierung der Anfangspopulation

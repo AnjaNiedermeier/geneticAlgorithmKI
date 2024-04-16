@@ -1,0 +1,75 @@
+@startuml
+
+class Lkw {
+  - nr: int
+  - kapaKisten: int
+  - kapaGewicht: int
+  - kmh: int
+
+  + Lkw(attributes: String[])
+}
+
+class Auftrag {
+  - nr: int
+  - ziel: char
+  - entfernung: int
+  - anzahlKisten: int
+  - gewichtKisten: int
+  - zeitlimitBonus: int
+  - betragBonus: int
+  - entlohnung: int
+  - zeitlimitStrafe: int
+  - betragStrafe: int
+
+  + Auftrag(attributes: String[])
+}
+
+class Beladungsstrategie {
+  + {static} main(args: String[]): void
+  - {static} readLkwsFromCSV(pathToFile: String): Lkw[]
+  - {static} readAuftraegeFromCSV(pathToFile: String): Auftrag[]
+}
+
+class Population {
+  - population: Individual[]
+  - fitness: int[]
+  - size: int
+
+  + Population(size: int, lkws: Lkw[], auftraege: Auftrag[])
+  + calcFitness(lkws: Lkw[], auftraege: Auftrag[]): void
+  + getBestSolutionIndex(): int
+  + selectParentsRoulette(numParents: int): Individual[]
+  + selectParentsBestN(numParents: int): Individual[]
+  + generateOffspring(parents: Individual[], lkws: Lkw[], auftraege: Auftrag[]): Individual[]
+  + mutation(populationSubset: Individual[], mutationRate: double, auftraege: Auftrag[], lkws: Lkw[]): Individual[]
+  + replacePopulation(offspring: Individual[]): void
+  + getFitness(): int[]
+  + getPopulation(): Individual[]
+  + printFitnessStats(): void
+
+  - initPopulation(populationSize: int, lkws: Lkw[], auftraege: Auftrag[]): Individual[]
+  - getNHighestIndices(array: int[], n: int): int[]
+  - getNLowestIndices(array: int[], n: int): int[]
+}
+
+class Individual{
+
+}
+
+class Car {
+  - make: string
+  - model: string
+  + drive()
+  + park()
+}
+
+class Engine {
+  - cylinders: int
+  - fuelType: string
+  + start()
+  + stop()
+}
+
+Car *- Engine
+
+@enduml
