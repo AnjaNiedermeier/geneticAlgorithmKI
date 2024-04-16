@@ -4,17 +4,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 public class Beladungsstrategie {
     public static void main(String[] args) {
         // Algorithm Hyperparameters
-        int populationSize = 1000;
-        int maxRounds = 100;
-        double mutationRate = 0.2;
+        int populationSize = 2000;
+        int maxRounds = 1000;
+        final double initialMutationRate = 0.2;
+        final double finalMutationRate = 0.6;
+        double mutationRate = initialMutationRate;
+        double crossoverRate = 0.2;
 
         List<Auftrag> auftraege;
         List<Lkw> lkws;
@@ -34,44 +37,63 @@ public class Beladungsstrategie {
         int[][] bestSolution = new int[lkws.size()][auftraege.size()];
         // Wiederhole für maxRounds Runden
         for (int round = 1; round <= maxRounds; round++) {
+            //gradually decrease mutation rate
+            if(mutationRate<finalMutationRate){
+                mutationRate+= (finalMutationRate-initialMutationRate)/maxRounds;
+                System.out.println("Mutation Rate: "+ mutationRate);
+            }
             System.out.println("Runde " + round + ": ");
             // Berechne fitness der Lösungen
             int[] fitness = calculateFitnessPopulation(populationSize, auftraege, lkws, population);
-            
-            //Merke beste valide Lösung
+            // System.out.println("Fitness Scores:");
+            // for(int fit : fitness){
+            //     System.out.print(fit + ", ");
+            // }
+
+            // Merke beste valide Lösung
             int[][] bestSolutionRound = population[getBestSolutionIndex(fitness)];
             int bestSolutionRoundScore = calculateFitnessIndividual(bestSolutionRound, auftraege, lkws);
-            if(bestSolutionRoundScore > bestSolutionScore && isValidIndividual(bestSolutionRound, lkws, auftraege)){
-                System.out.println("hier");
+            if (bestSolutionRoundScore > bestSolutionScore && isValidIndividual(bestSolutionRound, lkws, auftraege)) {
                 bestSolution = bestSolutionRound;
                 bestSolutionScore = bestSolutionRoundScore;
             }
 
             // Select Parents for Reproduction
-            int numParents = getNumNegativeFitnessValues(fitness);
-            int[][][] parents = selectParents(populationSize, numParents, auftraege, lkws, population, fitness);
+            //int numParents = getNumNegativeFitnessValues(fitness);
+            int numParents = (int) Math.ceil(populationSize * crossoverRate);
+            System.out.println("Select "+ numParents + " parents for reproduction");
+            int[][][] parents = selectParentsRoulette(populationSize, numParents, auftraege, lkws, population, fitness);
+            //int[][][] parents = selectParentsBestN(populationSize, numParents, auftraege, lkws, population, fitness);
 
             // Generate n offspring individuals from the n selected parents
             int[][][] offspring = generateOffspring(parents, lkws, auftraege);
+
+            //Mutate random individuals of the offspring
+            offspring = mutation(offspring, mutationRate, auftraege, lkws);
 
             // Replace population with offspring individuals
             replacePopulation(population, offspring, fitness);
 
             // Mutate random individuals of the population
-            population = mutation(population, mutationRate, auftraege, lkws);
+            //population = mutation(population, mutationRate, auftraege, lkws);
 
         }
 
-        //Print Best Solution
+        // Print Best Solution
         System.out.println("-------------------------------");
         System.out.println("Best Strategy that was found:");
         printStrategy(bestSolution, bestSolutionScore);
+
+        //investigate population
+        // for (int[][] pop : population){
+        //     printStrategy(pop, bestSolutionScore);
+        // }
     }
 
     private static void printStrategy(int[][] bestSolution, int bestSolutionScore) {
-        System.out.println("Profit: "+ bestSolutionScore);
-        for (int i = 0; i<bestSolution.length; i++) {
-            System.out.print("Lkw "+ (i+1) + ": ");
+        System.out.println("Profit: " + bestSolutionScore);
+        for (int i = 0; i < bestSolution.length; i++) {
+            System.out.print("Lkw " + (i + 1) + ": ");
             for (int item : bestSolution[i]) {
                 System.out.printf("%3d", item); // Adjust the width as needed
             }
@@ -82,8 +104,8 @@ public class Beladungsstrategie {
     private static int getBestSolutionIndex(int[] fitness) {
         int bestScore = 0;
         int bestScoreIndex = 0;
-        for(int i = 0; i<fitness.length; i++){
-            if(fitness[i]>bestScore){
+        for (int i = 0; i < fitness.length; i++) {
+            if (fitness[i] > bestScore) {
                 bestScore = fitness[i];
                 bestScoreIndex = i;
             }
@@ -109,15 +131,17 @@ public class Beladungsstrategie {
         for (int i = 0; i < mutationAmount; i++) {
             int indexMutation = random.nextInt(population.length);
             int[][] mutationCandidate = population[indexMutation];
-            mutationCandidate = mutateCandidate(mutationCandidate);
+            mutationCandidate = mutateCandidateSwapRow(mutationCandidate);
+            mutationCandidate = mutateCandidateAdd(mutationCandidate);
             if (isValidIndividual(mutationCandidate, lkws, auftraege)) {
                 population[indexMutation] = mutationCandidate;
             }
+            
         }
         return population;
     }
 
-    private static int[][] mutateCandidate(int[][] mutationCandidate) {
+    private static int[][] mutateCandidateSwapRow(int[][] mutationCandidate) {
         int[][] mutatedCandidate = Arrays.stream(mutationCandidate).map(int[]::clone).toArray(int[][]::new);
         Random random = new Random();
         int swapCol = random.nextInt(mutatedCandidate[0].length);
@@ -131,40 +155,104 @@ public class Beladungsstrategie {
         return mutatedCandidate;
     }
 
+    private static int[][] mutateCandidateAdd(int[][] mutationCandidate) {
+        int[][] mutatedCandidate = Arrays.stream(mutationCandidate).map(int[]::clone).toArray(int[][]::new);
+        Random random = new Random();
+        int col = random.nextInt(mutatedCandidate[0].length);
+        int row = random.nextInt(mutatedCandidate.length);
+
+        // Add 1 to random gene
+        mutatedCandidate[row][col] += 1;
+        return mutatedCandidate;
+    }
+
     // Get the worst individuals of the population and replace them
     private static void replacePopulation(int[][][] population, int[][][] offspring, int[] fitness) {
-        int[] worstIndices = getWorstIndividuals(fitness, offspring.length);
+        int[] worstIndices = getNLowestIndices(fitness, offspring.length);
         int index = 0;
         for (int i = 0; i < worstIndices.length; i++) {
-            population[i] = offspring[index++];
+            population[worstIndices[i]] = offspring[index++];
         }
     }
 
-    private static int[] getWorstIndividuals(int[] fitness, int n) {
-        // Create a copy of the original array
-        int[] sortedFitness = Arrays.copyOf(fitness, fitness.length);
-        Arrays.sort(sortedFitness);
-        int[] worstIndices = new int[n];
 
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < fitness.length; j++) {
-                if (fitness[j] == sortedFitness[i]) {
-                    worstIndices[i] = j;
-                }
-            }
+    private static int[][][] selectParentsBestN(int populationSize, int numParents, List<Auftrag> auftraege,
+            List<Lkw> lkws, int[][][] population, int[] fitness) {
+
+        //Fill parent indices with best numParents indices
+        int[] parentIndices = getNHighestIndices(fitness, numParents);
+
+        // Get parents from parentIndices
+        int[][][] parents = new int[numParents][lkws.size()][auftraege.size()];
+        int index = 0;
+        for (int i : parentIndices) {
+            parents[index++] = population[i];
         }
-        return worstIndices;
+        return parents;
     }
 
-    private static int[][][] selectParents(int populationSize, int numParents, List<Auftrag> auftraege,
+    private static int[] getNHighestIndices(int[] array, int n) {
+        // Create a Map to store indices and values
+        Map<Integer, Integer> indices = new HashMap<>();
+        
+        // Fill Map with indices and values from array
+        for (int i = 0; i < array.length; i++) {
+            indices.put(i, array[i]);
+        }
+        
+        // Sort the Map by values in descending order
+        List<Map.Entry<Integer, Integer>> sortedFitness = new ArrayList<>(indices.entrySet());
+        sortedFitness.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+        
+        // Extract the first N indices
+        int[] highestIndices = new int[n];
+        for (int i = 0; i < n && i < sortedFitness.size(); i++) {
+            highestIndices[i] = (int) sortedFitness.get(i).getKey();
+        }
+        // System.out.println(n + " highest Indices");
+        // for(int i :  highestIndices){
+        //     System.out.print(i + ", ");
+        // }
+        // System.out.println();
+        return highestIndices;
+    }
+
+    private static int[] getNLowestIndices(int[] array, int n) {
+        // Create a Map to store indices and values
+        Map<Integer, Integer> indices = new HashMap<>();
+        
+        // Fill Map with indices and values from array
+        for (int i = 0; i < array.length; i++) {
+            indices.put(i, array[i]);
+        }
+        
+        // Sort the Map by values in descending order
+        List<Map.Entry<Integer, Integer>> sortedFitness = new ArrayList<>(indices.entrySet());
+        sortedFitness.sort((a, b) -> a.getValue().compareTo(b.getValue()));
+        
+        // Extract the first N indices
+        int[] lowestIndices = new int[n];
+        for (int i = 0; i < n && i < sortedFitness.size(); i++) {
+            lowestIndices[i] = (int) sortedFitness.get(i).getKey();
+        }
+        
+        // System.out.println(n + " lowest Indices");
+        // for(int i :  lowestIndices){
+        //     System.out.print(i + ", ");
+        // }
+        //System.out.println();
+        return lowestIndices;
+    }
+
+    private static int[][][] selectParentsRoulette(int populationSize, int numParents, List<Auftrag> auftraege,
             List<Lkw> lkws, int[][][] population, int[] fitness) {
 
         List<Integer> parentList = new ArrayList<>();
         while (parentList.size() < numParents) {
-            int currentParent = selectParent(fitness);
-            // if (!parentList.contains(currentParent)) {
-            parentList.add(currentParent);
-            // }
+            int currentParent = selectParentRoulette(fitness);
+            if (!parentList.contains(currentParent)) {
+                parentList.add(currentParent);
+            }
         }
 
         int[] parentIndices = parentList.stream().mapToInt(i -> i).toArray();
@@ -177,80 +265,7 @@ public class Beladungsstrategie {
         return parents;
     }
 
-    private static int[] calculateFitnessPopulation(int populationSize, List<Auftrag> auftraege, List<Lkw> lkws,
-            int[][][] population) {
-        int[] fitness = new int[populationSize];
-        for (int i = 0; i < fitness.length; i++) {
-            fitness[i] = calculateFitnessIndividual(population[i], auftraege, lkws);
-        }
-        // Print average, highest an lowest fitness
-        int fitnessSum = 0;
-        int minFitness = Integer.MAX_VALUE;
-        int maxFitness = Integer.MIN_VALUE;
-        for (int fit : fitness) {
-            fitnessSum += fit;
-            if (fit < minFitness) {
-                minFitness = fit;
-            }
-            if (fit > maxFitness) {
-                maxFitness = fit;
-            }
-        }
-        System.out.println("Average Fitness: " + fitnessSum / fitness.length);
-        System.out.println("Min Fitness: " + minFitness);
-        System.out.println("Max Fitness: " + maxFitness);
-        return fitness;
-    }
-
-    private static int[][][] generateOffspring(int[][][] parents, List<Lkw> lkws, List<Auftrag> auftraege) {
-        int num_parents = parents.length;
-        // Create a List to store valid offspring individuals
-        List<int[][]> childrenList = new ArrayList<>();
-
-        // Generate Combinations of two parents to crossover
-        int[][] combinations = new int[num_parents][2];
-        List<Integer> numbers = new ArrayList<>();
-        for (int i = 0; i < num_parents; i++) {
-            numbers.add(i);
-        }
-        Collections.shuffle(numbers);
-        // Fill the array with combinations of tuples
-        for (int i = 0; i < num_parents; i++) {
-            combinations[i][0] = numbers.get(i);
-            combinations[i][1] = numbers.get((i + 1) % num_parents); // Ensuring no tuple contains the same number
-        }
-        // Fill Children with crossovers from combinations of two parents
-        for (int i = 0; i < num_parents; i++) {
-            int[][] child = verticalBandCrossover(parents[combinations[i][0]], parents[combinations[i][1]]);
-            if (isValidIndividual(child, lkws, auftraege)) {
-                childrenList.add(child);
-            }
-        }
-        int[][][] childrenArray = childrenList.stream().toArray(int[][][]::new);
-        return childrenArray;
-    }
-
-    // Two random numbers are generated , and information inside the vertical region
-    // of the grid determined by the numbers is exchanged. In this case, we take
-    // parentB and copy some random auftraege from parentA into it
-    private static int[][] verticalBandCrossover(int[][] parentA, int[][] parentB) {
-        int[][] child = Arrays.stream(parentB).map(int[]::clone).toArray(int[][]::new);
-
-        // Select two random points for crossover (in the range of Aufträge)
-        Random random = new Random();
-        int startPoint = random.nextInt(parentA[0].length);
-        int endPoint = random.nextInt(parentA[0].length - startPoint) + startPoint;
-
-        // Copy the segment between the two points from parentA to child
-        for (int j = startPoint; j <= endPoint; j++) {
-            for (int i = 0; i < parentA.length; i++) {
-                child[i][j] = parentA[i][j];
-            }
-        }
-        return child;
-    }
-
-    private static int selectParent(int[] fitness) {
+    private static int selectParentRoulette(int[] fitness) {
         // Calculate total Fitness of population (Roulette Wheel)
         int totalFitness = 0;
         for (int i = 0; i < fitness.length; i++) {
@@ -275,6 +290,138 @@ public class Beladungsstrategie {
         }
         // Default: Give back the last element
         return fitness.length - 1;
+    }
+
+    private static int[] calculateFitnessPopulation(int populationSize, List<Auftrag> auftraege, List<Lkw> lkws,
+            int[][][] population) {
+        int[] fitness = new int[populationSize];
+        for (int i = 0; i < fitness.length; i++) {
+            fitness[i] = calculateFitnessIndividual(population[i], auftraege, lkws);
+        }
+        // Print average, highest an lowest fitness
+        int fitnessSum = 0;
+        int minFitness = Integer.MAX_VALUE;
+        int maxFitness = Integer.MIN_VALUE;
+        for (int fit : fitness) {
+            fitnessSum += fit;
+            if (fit < minFitness) {
+                minFitness = fit;
+            }
+            if (fit > maxFitness) {
+                maxFitness = fit;
+            }
+        }
+        System.out.println("Avg. Fitness: " + fitnessSum / fitness.length);
+        System.out.println("Min. Fitness: " + minFitness);
+        System.out.println("Max. Fitness: " + maxFitness);
+        System.out.println();
+        return fitness;
+    }
+
+    private static int[][][] generateOffspring(int[][][] parents, List<Lkw> lkws, List<Auftrag> auftraege) {
+        int num_parents = parents.length;
+        // Create a List to store valid offspring individuals
+        List<int[][]> childrenList = new ArrayList<>();
+
+        // Generate Combinations of two parents to crossover
+        int[][] combinations = new int[num_parents][2];
+        List<Integer> numbers = new ArrayList<>();
+        for (int i = 0; i < num_parents; i++) {
+            numbers.add(i);
+        }
+        Collections.shuffle(numbers);
+        // Fill the array with combinations of tuples
+        for (int i = 0; i < num_parents; i++) {
+            combinations[i][0] = numbers.get(i);
+            combinations[i][1] = numbers.get((i + 1) % num_parents); // Ensuring no tuple contains the same number
+        }
+        // Fill Children with crossovers from combinations of two parents
+        for (int i = 0; i < num_parents; i++) {
+            //Crossover Options: 
+            int[][] child;
+            //child = verticalBandCrossover(parents[combinations[i][0]], parents[combinations[i][1]]);
+            child = horizontalBandCrossover(parents[combinations[i][0]], parents[combinations[i][1]]);
+            //child = blockCrossover(parents[combinations[i][0]], parents[combinations[i][1]]);
+            //child = uniformCrossover(parents[combinations[i][0]], parents[combinations[i][1]]);
+            if (isValidIndividual(child, lkws, auftraege)) {
+                childrenList.add(child);
+            }
+        }
+        int[][][] childrenArray = childrenList.stream().toArray(int[][][]::new);
+        System.out.println(childrenArray.length + " valid children generated");
+        return childrenArray;
+    }
+
+    private static int[][] uniformCrossover(int[][] parentA, int[][] parentB) {
+        int[][] child = Arrays.stream(parentB).map(int[]::clone).toArray(int[][]::new);
+        Random random = new Random();
+        // Iterate through array, with 50% chance, replace parentB's gene with parentA's
+        for (int i = 0; i < child.length; i++) {
+            for (int j = 0; j < child[0].length; j++) {
+                if(random.nextDouble()<0.5){
+                    child[i][j] = parentA[i][j];
+                }
+            }
+        }
+        return child;
+    }
+
+    // Two random numbers are generated , and information inside the vertical region
+    // of the grid determined by the numbers is exchanged. In this case, we take
+    // parentB and copy some random auftraege from parentA into it
+    private static int[][] verticalBandCrossover(int[][] parentA, int[][] parentB) {
+        int[][] child = Arrays.stream(parentB).map(int[]::clone).toArray(int[][]::new);
+
+        // Select two random points for crossover (in the range of Aufträge)
+        Random random = new Random();
+        int startPoint = random.nextInt(parentA[0].length);
+        int endPoint = random.nextInt(parentA[0].length - startPoint) + startPoint;
+
+        // Copy the segment between the two points from parentA to child
+        for (int j = startPoint; j <= endPoint; j++) {
+            for (int i = 0; i < parentA.length; i++) {
+                child[i][j] = parentA[i][j];
+            }
+        }
+        return child;
+    }
+
+    private static int[][] horizontalBandCrossover(int[][] parentA, int[][] parentB) {
+        int[][] child = Arrays.stream(parentB).map(int[]::clone).toArray(int[][]::new);
+
+        // Select two random points for crossover (in the range of LKW)
+        Random random = new Random();
+        int startPoint = random.nextInt(parentA.length);
+        int endPoint = random.nextInt(parentA.length - startPoint) + startPoint;
+
+        // Copy the segment between the two points from parentA to child
+        for (int i = startPoint; i <= endPoint; i++) {
+            for (int j = 0; j < parentA[0].length; j++) {
+                child[i][j] = parentA[i][j];
+            }
+        }
+        return child;
+    }
+
+    private static int[][] blockCrossover(int[][] parentA, int[][] parentB) {
+        int[][] child = Arrays.stream(parentB).map(int[]::clone).toArray(int[][]::new);
+
+        Random random = new Random();
+        // Select two random points for crossover (in the range of LKW)
+        int startPointLkw = random.nextInt(parentA.length);
+        int endPointLkw = random.nextInt(parentA.length - startPointLkw) + startPointLkw;
+
+        // Select two random points for crossover (in the range of Aufträge)
+        int startPointAuftraege = random.nextInt(parentA[0].length);
+        int endPointAuftraege = random.nextInt(parentA[0].length - startPointAuftraege) + startPointAuftraege;
+
+        // Copy the segment between the 4 pointss from parentA to child
+        for (int i = startPointLkw; i <= endPointLkw; i++) {
+            for (int j = startPointAuftraege; j < endPointAuftraege; j++) {
+                child[i][j] = parentA[i][j];
+            }
+        }
+        return child;
     }
 
     private static int calculateFitnessIndividual(int[][] individual, List<Auftrag> auftraege, List<Lkw> lkws) {

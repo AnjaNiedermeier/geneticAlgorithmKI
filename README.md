@@ -50,10 +50,17 @@ Das funktioniert so:
 1. **Crossover**
 Generiere aus den n Eltern n neue Strategien
 Multiple Variants are implemented based of this source: https://content.wolfram.com/sites/13/2018/02/05-3-4.pdf
-First one is Vertical band Crossover
+Ranking: 
+1. Horizontal Band Crossover
+2. Vertical Band Crossover
+3. Block Crossover (Aufträge und LKWs werden gesplittet. Deshalb schlechte Ergebnisse keine Überraschung)
+
+- Uniform Crossover
+
 2. **Mutation**
 Mutiere einen gewissen Prozentsatz der neuen Lösungen/aller Lösungen
-
+Only Mutating the offspring seems to work best
+Gradually changing the mutation rate from low to high
 ## 6. Ersetzung
 Wähle numParents zufällige Individuen aus, die ersetzt werden mit den neu generierten Kindern. Dadurch bleibt die Populationsgröße gleich.
 ## 7. Terminierungskriterium
