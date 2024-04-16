@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Beladungsstrategie {
+
     public static void main(String[] args) {
         // Algorithm Hyperparameters
         int populationSize = 2000;

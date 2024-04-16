@@ -6,7 +6,7 @@ class Lkw {
   - kapaGewicht: int
   - kmh: int
 
-  + Lkw(attributes: String[])
+  + Lkw(attributes)
 }
 
 class Auftrag {
@@ -21,55 +21,54 @@ class Auftrag {
   - zeitlimitStrafe: int
   - betragStrafe: int
 
-  + Auftrag(attributes: String[])
+  + Auftrag(attributes)
 }
 
 class Beladungsstrategie {
-  + {static} main(args: String[]): void
-  - {static} readLkwsFromCSV(pathToFile: String): Lkw[]
-  - {static} readAuftraegeFromCSV(pathToFile: String): Auftrag[]
+  + {static} main(args): void
+  - {static} readLkwsFromCSV(pathToFile): Lkw[]
+  - {static} readAuftraegeFromCSV(pathToFile): Auftrag[]
 }
 
 class Population {
   - population: Individual[]
   - fitness: int[]
-  - size: int
 
-  + Population(size: int, lkws: Lkw[], auftraege: Auftrag[])
-  + calcFitness(lkws: Lkw[], auftraege: Auftrag[]): void
-  + getBestSolutionIndex(): int
-  + selectParentsRoulette(numParents: int): Individual[]
-  + selectParentsBestN(numParents: int): Individual[]
-  + generateOffspring(parents: Individual[], lkws: Lkw[], auftraege: Auftrag[]): Individual[]
-  + mutation(populationSubset: Individual[], mutationRate: double, auftraege: Auftrag[], lkws: Lkw[]): Individual[]
-  + replacePopulation(offspring: Individual[]): void
-  + getFitness(): int[]
-  + getPopulation(): Individual[]
-  + printFitnessStats(): void
+  + Population(size, lkws, auftraege)
+  + calcFitness(lkws, auftraege)
+  + getBestSolutionIndex()
+  + selectParentsRoulette(numParents)
+  + selectParentsBestN(numParents)
+  + generateOffspring(parents, lkws, auftraege)
+  + mutation(populationSubset, mutationRate, auftraege, lkws)
+  + replacePopulation(offspring)
+  + getFitness()
+  + getPopulation()
+  + printFitnessStats()
 
-  - initPopulation(populationSize: int, lkws: Lkw[], auftraege: Auftrag[]): Individual[]
-  - getNHighestIndices(array: int[], n: int): int[]
-  - getNLowestIndices(array: int[], n: int): int[]
+  - initPopulation(populationSize, lkws, auftraege)
+  - getNHighestIndices(array, n)
+  - getNLowestIndices(array, n)
 }
 
-class Individual{
+class Individual {
+  - individual: int[][]
 
+  + Individual(individual)
+  + Individual(lkws, auftraege)
+  + calculateFitness(auftraege, lkws): int
+  + isValid(lkws, auftraege): boolean
+  + mutateSwapRow(): void
+  + mutateAdd(): void
+  + printStrategy(bestSolutionScore): void
+  + getIndividual(): int[][]
+
+  - createRandomIndividual(lkws, auftraege): int[][]
+  - lkwHasAnotherZiel(individual, lkws, currentLkw, currentTarget, auftraege): boolean
+  - calcLkwCapacityGewicht(individual, lkws, lkw, auftraege): int
+  - calcLkwCapacityKisten(individual, lkws, lkw): int
 }
 
-class Car {
-  - make: string
-  - model: string
-  + drive()
-  + park()
-}
 
-class Engine {
-  - cylinders: int
-  - fuelType: string
-  + start()
-  + stop()
-}
-
-Car *- Engine
-
+Population o-- Individual
 @enduml
