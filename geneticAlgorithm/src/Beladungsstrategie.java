@@ -6,8 +6,8 @@ import java.util.List;
 
 public class Beladungsstrategie {
     // Algorithm Hyperparameters
-    private static int populationSize = 2000;
-    private static int maxRounds = 1000;
+    private static int populationSize = 5000;
+    private static int maxRounds = 500;
     private static double crossoverRate = 0.2;
 
     private static final double initialMutationRate = 0.2;

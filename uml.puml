@@ -2,9 +2,6 @@
 
 title UML Diagramm
 
-' This is a subtitle or additional info
-' You can add any text here to provide extra context or information
-
 class Lkw {
   - nr: int
   - kapaKisten: int

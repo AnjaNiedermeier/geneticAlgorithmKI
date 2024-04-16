@@ -1,16 +1,5 @@
 # geneticAlgorithmKI
 ## Vorgehensweise
-[X] Einlesen der Aufträge und LKWs  
-[O] Initialisierung der Anfangs Population  
-[O] Bewertung (Fitnessfunktion)  
-[O] Auswahl  
-[O] Reproduktion     
-[O] Ersetzung  
-[O] Terminierungskriterium  
-[O] Ausgabe  
-
-Klassendiagramm ist ohne Getter und Setter Methoden
-
 ## 1. Einlesen der Aufträge und LKWs
 
 ## 2. Initialisierung der Anfangspopulation
