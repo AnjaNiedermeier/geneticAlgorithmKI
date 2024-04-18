@@ -100,10 +100,8 @@ public class Individual {
             } else {
                 gewinnAuftrag = -auftrag.getBetragStrafe();
             }
-            // System.out.println("Gewinn Auftrag "+ j + ": "+ gewinnAuftrag);
             gewinn += gewinnAuftrag;
         }
-        // System.out.println("Gesamtgewinn des Individuums: "+ gewinn);
         return gewinn;
     }
 
@@ -120,26 +118,9 @@ public class Individual {
                 sumGewicht += individual[i][j] * auftraege[j].getGewichtKisten();
             }
             if (sumKisten > kapaKisten || sumGewicht > kapaGewicht) {
-                // System.out.println("Individual does not fulfill kisten or gewichts limit of
-                // LKWS");
                 return false;
             }
         }
-        /*
-         * //Es sollen genauso viele Kisten transportiert werden wie für jeden Auftrag
-         * nötig
-         * for(int j = 0; j<individual[0].length;j++){
-         * int auftragGroeße = auftraege.get(j).getAnzahlKisten();
-         * int sumKisten = 0;
-         * for(int i = 0; i<individual.length; i++){
-         * sumKisten+=individual[i][j];
-         * }
-         * if(sumKisten != auftragGroeße){
-         * System.out.println("Individual does not fulfill auftrags größe");
-         * return false;
-         * }
-         * }
-         */
         // Mehrere Aufträge auf einem LKW müssen das gleiche Ziel haben
         for (int i = 0; i < individual.length; i++) {
             char ziel = ' ';
@@ -147,7 +128,6 @@ public class Individual {
                 if (individual[i][j] != 0) {
                     char nextZiel = auftraege[j].getZiel();
                     if (nextZiel != ziel && ziel != ' ') {
-                        // System.out.println("Individual does not fulfill Ziel restrictions");
                         return false;
                     }
                     ziel = nextZiel;
@@ -187,9 +167,9 @@ public void printStrategy(int bestSolutionScore) {
     for (int i = 0; i < individual.length; i++) {
         System.out.print("Lkw " + (i + 1) + ": ");
         for (int auftrag : individual[i]) {
-            System.out.printf("%3d", auftrag); // Adjust the width as needed
+            System.out.printf("%3d", auftrag);
         }
-        System.out.println(); // Move to the next line after printing each row
+        System.out.println();
     }
 }
 
@@ -230,5 +210,4 @@ private int calcLkwCapacityKisten(int[][] individual, Lkw[] lkws, int lkw) {
 public int[][] getIndividual() {
     return individual;
 }
-
 }

@@ -159,9 +159,6 @@ public class Population {
         return new Individual(child);
     }
 
-    // Two random numbers are generated , and information inside the vertical region
-    // of the grid determined by the numbers is exchanged. In this case, we take
-    // parentB and copy some random auftraege from parentA into it
     private Individual verticalBandCrossover(Individual parentA, Individual parentB) {
         int[][] child = Arrays.stream(parentB.getIndividual()).map(int[]::clone).toArray(int[][]::new);
 

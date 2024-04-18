@@ -50,7 +50,6 @@ public class Beladungsstrategie {
             // Select Parents for Reproduction
             int numParents = (int) Math.ceil(populationSize * crossoverRate);
             Individual[] parents = population.selectParentsRoulette(numParents);
-            //Individual[] parents = population.selectParentsBestN(numParents);
 
             // Generate n offspring individuals from the n selected parents
             Individual[] offspring = population.generateOffspring(parents, lkws, auftraege);
@@ -65,9 +64,6 @@ public class Beladungsstrategie {
 
             // Replace population with offspring individuals
             population.replacePopulation(offspring);
-
-            // Mutate random individuals of the population
-            //population = population.mutation(population, mutationRate, auftraege, lkws);
 
             // Berechne fitness der Lösungen
             population.calcFitness(lkws, auftraege);
