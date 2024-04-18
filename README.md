@@ -45,8 +45,7 @@ Ranking:
 1. Horizontal Band Crossover
 2. Vertical Band Crossover
 3. Block Crossover (Aufträge und LKWs werden gesplittet. Deshalb schlechte Ergebnisse keine Überraschung)
-
-- Uniform Crossover
+4. Uniform Crossover
 
 2. **Mutation**
 Mutiere einen gewissen Prozentsatz der neuen Lösungen/aller Lösungen
